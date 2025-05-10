@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>逃げろ - 日本語タイプゲーム</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: url('https://i.imgur.com/JQlE6gN.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        h1 {
+            color: #ffcc00;
+            margin-bottom: 20px;
+            font-size: 2.2em;
+            text-shadow: 3px 3px 6px #000;
+            font-weight: bold;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+            color: #ffcc00;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #ffcc00;
+            font-size: 1em;
+            background-color: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s;
+            color: #333;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #ff5722;
+            box-shadow: 0 0 8px rgba(255, 87, 34, 0.5);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #ff5722, #e64a19);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        #game-screen, #result-screen {
+            display: none;
+        }
+        
+        .text-display {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            line-height: 1.6;
+            min-height: 150px; /* 增加高度以显示更多文本 */
+            max-height: 200px; /* 增加高度以显示更多文本 */
+            overflow-y: auto;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .text-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            border: 2px solid #ffcc00;
+            background-color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            color: #333;
+        }
+        
+        .text-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        .timer {
+            font-size: 1.5em;
+            margin: 15px 0;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin: 15px 0;
+            height: 20px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .character {
+            font-size: 1.1em;
+            margin: 0 1px;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        
+        .correct {
+            color: #8BC34A;
+        }
+        
+        .incorrect {
+            color: #f44336;
+            text-decoration: underline;
+        }
+        
+        .current {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        .game-area {
+            position: relative;
+            height: 120px; /* 减小高度以腾出空间 */
+            margin: 20px 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-image: url('https://i.imgur.com/5QvYF5J.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        #thief, #police {
+            position: absolute;
+            bottom: 10px;
+            transition: left 0.5s ease-out;
+            z-index: 10;
+        }
+        
+        #thief {
+            left: 20px;
+            width: 80px; /* 进一步减小尺寸 */
+            height: 80px; /* 进一步减小尺寸 */
+            background-color: #111;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 0 3px #333, 0 0 0 6px #111;
+        }
+        
+        .thief-face {
+            width: 50px; /* 进一步减小尺寸 */
+            height: 50px; /* 进一步减小尺寸 */
+            background-color: #333;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5em; /* 减小字号 */
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .thief-face::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 15px; /* 减小尺寸 */
+            background-color: #111;
+            top: 0;
+            left: 0;
+        }
+        
+        .thief-face::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 10px; /* 减小尺寸 */
+            background-color: #111;
+            bottom: 0;
+            left: 0;
+        }
+        
+        #police {
+            left: 20px;
+            width: 80px; /* 减小尺寸 */
+            height: 80px; /* 减小尺寸 */
+            font-size: 2.5em; /* 调整图标大小 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 255, 0.2);
+            border-radius: 50%;
+            backdrop-filter: blur(5px);
+            display: none; /* 初始隐藏 */
+        }
+        
+        .road {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 15px; /* 减小尺寸 */
+            background-color: rgba(51, 51, 51, 0.7);
+            z-index: 5;
+        }
+        
+        .result-info {
+            font-size: 1.2em;
+            margin: 15px 0;
+            color: white;
+        }
+        
+        .success {
+            color: #8BC34A;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .failure {
+            color: #f44336;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .countdown {
+            font-size: 1.2em;
+            color: #ff5722;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        
+        .mode-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 25px 0;
+            gap: 15px;
+        }
+        
+        .mode-option {
+            flex: 1;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mode-option::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ff5722, #ffcc00);
+        }
+        
+        .mode-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        .mode-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .mode-option input[type="radio"]:checked + .mode-content {
+            background-color: rgba(255, 204, 0, 0.2);
+            border-color: #ffcc00;
+        }
+        
+        .mode-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .mode-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .mode-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #ffcc00;
+        }
+        
+        .mode-desc {
+            font-size: 0.9em;
+            color: #ddd;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 开始屏幕 -->
+        <div id="start-screen">
+            <h1>逃げろ - 日本語タイプゲーム</h1>
+            <p class="floating">あなたは泥棒です！警察に捕まらないように、できるだけ速く正確にタイピングしてください！</p>
+            <div class="form-group">
+                <label for="name">名前:</label>
+                <input type="text" id="name" placeholder="あなたの名前を入力してください">
+            </div>
+            <div class="form-group">
+                <label for="student-id">学籍番号:</label>
+                <input type="text" id="student-id" placeholder="あなたの学籍番号を入力してください">
+            </div>
+            
+            <div class="mode-container">
+                <label class="mode-option">
+                    <input type="radio" name="mode" value="easy" checked>
+                    <div class="mode-content">
+                        <div class="mode-icon">😊</div>
+                        <div class="mode-title">簡単モード</div>
+                        <div class="mode-desc">警察60秒後出発<br>3秒/文字</div>
+                    </div>
+                </label>
+                
+                <label class="mode-option">
+                    <input type="radio" name="mode" value="normal">
+                    <div class="mode-content">
+                        <div class="mode-icon">😐</div>
+                        <div class="mode-title">普通モード</div>
+                        <div class="mode-desc">警察30秒後出発<br>2秒/文字</div>
+                    </div>
+                </label>
+                
+                <label class="mode-option">
+                    <input type="radio" name="mode" value="hard">
+                    <div class="mode-content">
+                        <div class="mode-icon">😰</div>
+                        <div class="mode-title">難しいモード</div>
+                        <div class="mode-desc">警察20秒後出発<br>1秒/文字</div>
+                    </div>
+                </label>
+            </div>
+            
+            <button id="start-btn">ゲームスタート</button>
+        </div>
+        
+        <!-- 游戏屏幕 -->
+        <div id="game-screen">
+            <h1>逃げろ！警察が近づいてくる！</h1>
+            <div class="timer">
+                時間: <span id="time-display">00:00</span>
+            </div>
+            <div class="countdown" id="countdown">
+                警察が出発するまで: <span id="countdown-display">60</span>秒
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="game-area">
+                <div class="road"></div>
+                <div id="thief">
+                    <div class="thief-face">👀</div>
+                </div>
+                <div id="police">👮</div>
+            </div>
+            <div class="text-display" id="text-display"></div>
+            <input type="text" class="text-input" id="text-input" placeholder="ここにタイプしてください..." autocomplete="off" autocorrect="off" spellcheck="false">
+            <button id="restart-btn">やり直す</button>
+        </div>
+        
+        <!-- 结果屏幕 -->
+        <div id="result-screen">
+            <h1>ゲーム結果</h1>
+            <div id="result-message" class="success">おめでとうございます！逃げ切りました！</div>
+            <div class="result-info">名前: <span id="result-name"></span></div>
+            <div class="result-info">学籍番号: <span id="result-id"></span></div>
+            <div class="result-info">タイム: <span id="result-time"></span></div>
+            <div class="result-info">入力文字数: <span id="result-chars"></span></div>
+            <button id="play-again-btn">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏数据
+        const gameText = "先週、私は友達の家に遊びに行きました。行くときに、東京駅で電車を乗り換えなければならなかったのですが、東京駅は広すぎて、乗り換える電車の場所が分かりませんでした。それで、メモを持って駅の中を行ったり来たりしていました。「どうしよう。」と思って困っていたとき、山田さんという女の人が声をかけてくれました。山田さんは駅の中にある喫茶店でお茶を飲みながら、私が行ったり来たりしているのを見ていたそうです。「どうしたんですか。」と聞かれたので、「電車の場所が分からないんです。」と答えました。山田さんは私が乗る電車のところまで一緒に行ってくれました。山田さんは仕事で東京に来ていて、今から京都に帰ると言いました。私は「時間は大丈夫ですか。」と聞きました。山田さんは「京都に行く新幹線はたくさんあるから、次のでも大丈夫です。私も、外国に住んでいたとき、いろいろな人に親切にしてもらいましたから。」と言いました。私は「本当にありがとうございます。」とお礼を言いました。電車に乗って、一人になった私は、山田さんの言葉を思い出して、心が温かくなりました。そして、私も山田さんみたいに困っている人に親切にしようと思いました。";
+        let startTime;
+        let timerInterval;
+        let countdownInterval;
+        let policeChaseInterval;
+        let currentPosition = 0;
+        let playerName = "";
+        let studentId = "";
+        let policeStarted = false;
+        let gameMode = "easy";
+        let totalCharsTyped = 0;
+        
+        // DOM元素
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const textDisplay = document.getElementById('text-display');
+        const textInput = document.getElementById('text-input');
+        const timeDisplay = document.getElementById('time-display');
+        const countdownDisplay = document.getElementById('countdown-display');
+        const progressBar = document.getElementById('progress-bar');
+        const resultName = document.getElementById('result-name');
+        const resultId = document.getElementById('result-id');
+        const resultTime = document.getElementById('result-time');
+        const resultMessage = document.getElementById('result-message');
+        const thief = document.getElementById('thief');
+        const police = document.getElementById('police');
+        const countdownElement = document.getElementById('countdown');
+        const resultChars = document.getElementById('result-chars');
+        
+        // 初始化游戏
+        function initGame() {
+            // 显示文本
+            displayText();
+            
+            // 重置游戏状态
+            currentPosition = 0;
+            policeStarted = false;
+            totalCharsTyped = 0;
+            
+            // 重置进度条
+            progressBar.style.width = '0%';
+            
+            // 重置角色位置
+            thief.style.left = '20px';
+            police.style.left = '20px';
+            police.style.display = 'none'; // 初始隐藏警察
+            
+            // 显示倒计时
+            countdownElement.style.display = 'block';
+            
+            // 聚焦输入框
+            textInput.value = '';
+            textInput.focus();
+            
+            // 开始计时器
+            startTimer();
+            
+            // 开始警察倒计时
+            startPoliceCountdown();
+        }
+        
+        // 显示文本
+        function displayText() {
+            textDisplay.innerHTML = '';
+            
+            for (let i = 0; i < gameText.length; i++) {
+                const span = document.createElement('span');
+                span.className = 'character';
+                span.textContent = gameText[i];
+                
+                if (i < currentPosition) {
+                    span.classList.add('correct');
+                } else if (i === currentPosition) {
+                    span.classList.add('current');
+                }
+                
+                textDisplay.appendChild(span);
+            }
+        }
+        
+        // 开始计时器
+        function startTimer() {
+            startTime = new Date();
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                const currentTime = new Date();
+                const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+                
+                const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+                const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+                
+                timeDisplay.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+        
+        // 开始警察倒计时
+        function startPoliceCountdown() {
+            clearInterval(countdownInterval);
+            
+            // 根据游戏模式设置倒计时时间
+            let countdown;
+            switch(gameMode) {
+                case 'hard':
+                    countdown = 20;
+                    break;
+                case 'normal':
+                    countdown = 30;
+                    break;
+                case 'easy':
+                default:
+                    countdown = 60;
+            }
+            
+            countdownDisplay.textContent = countdown;
+            
+            countdownInterval = setInterval(() => {
+                countdown--;
+                countdownDisplay.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownElement.style.display = 'none';
+                    startPoliceChase();
+                }
+            }, 1000);
+        }
+        
+        // 开始警察追赶
+        function startPoliceChase() {
+            police.style.display = 'flex'; // 显示警察
+            policeStarted = true;
+            police.classList.add('pulse');
+            
+            // 根据游戏模式设置警察移动速度
+            let speed;
+            switch(gameMode) {
+                case 'hard':
+                    speed = 1000; // 1秒/文字
+                    break;
+                case 'normal':
+                    speed = 2000; // 2秒/文字
+                    break;
+                case 'easy':
+                default:
+                    speed = 3000; // 3秒/文字
+            }
+            
+            // 警察前进
+            clearInterval(policeChaseInterval);
+            policeChaseInterval = setInterval(() => {
+                if (!policeStarted) {
+                    clearInterval(policeChaseInterval);
+                    return;
+                }
+                
+                const gameAreaWidth = document.querySelector('.game-area').offsetWidth;
+                const policePosition = parseInt(police.style.left);
+                const newPolicePosition = policePosition + (gameAreaWidth / gameText.length);
+                police.style.left = `${newPolicePosition}px`;
+                
+                // 检查是否被抓到
+                if (newPolicePosition >= parseInt(thief.style.left)) {
+                    endGame(false);
+                    clearInterval(policeChaseInterval);
+                }
+            }, speed);
+        }
+        
+        // 处理输入
+        textInput.addEventListener('input', (e) => {
+            const inputValue = e.target.value;
+            const correctText = gameText.substring(0, inputValue.length);
+            
+            if (inputValue === correctText) {
+                // 全部正确
+                currentPosition = inputValue.length;
+                totalCharsTyped = currentPosition;
+                
+                // 更新显示文本
+                displayText();
+                
+                // 更新进度条
+                const progress = (currentPosition / gameText.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                
+                // 小偷移动
+                const gameAreaWidth = document.querySelector('.game-area').offsetWidth;
+                const maxThiefPosition = gameAreaWidth - 100; // 防止小偷移出画面
+                const newThiefPosition = Math.min(20 + (currentPosition * (maxThiefPosition / gameText.length)), maxThiefPosition);
+                thief.style.left = `${newThiefPosition}px`;
+                
+                // 检查是否完成
+                if (currentPosition === gameText.length) {
+                    endGame(true);
+                }
+            }
+        });
+        
+        // 防止复制粘贴
+        textInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+        });
+        
+        textInput.addEventListener('copy', (e) => {
+            e.preventDefault();
+        });
+        
+        textInput.addEventListener('cut', (e) => {
+            e.preventDefault();
+        });
+        
+        // 防止回车键提交表单
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+        
+        // 结束游戏
+        function endGame(success) {
+            clearInterval(timerInterval);
+            clearInterval(countdownInterval);
+            clearInterval(policeChaseInterval);
+            policeStarted = false;
+            police.classList.remove('pulse');
+            
+            // 计算用时
+            const endTime = new Date();
+            const elapsedTime = Math.floor((endTime - startTime) / 1000);
+            const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+            const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+            
+            // 显示结果
+            resultName.textContent = playerName;
+            resultId.textContent = studentId;
+            resultTime.textContent = `${minutes}:${seconds}`;
+            resultChars.textContent = totalCharsTyped;
+            
+            if (success) {
+                resultMessage.textContent = 'おめでとうございます！逃げ切りました！';
+                resultMessage.className = 'success';
+            } else {
+                resultMessage.textContent = '残念！警察に捕まってしまいました！';
+                resultMessage.className = 'failure';
+            }
+            
+            // 切换到结果屏幕
+            gameScreen.style.display = 'none';
+            resultScreen.style.display = 'block';
+        }
+        
+        // 开始游戏按钮
+        startBtn.addEventListener('click', () => {
+            playerName = document.getElementById('name').value.trim();
+            studentId = document.getElementById('student-id').value.trim();
+            gameMode = document.querySelector('input[name="mode"]:checked').value;
+            
+            if (playerName === '' || studentId === '') {
+                alert('名前と学籍番号を入力してください！');
+                return;
+            }
+            
+            startScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            initGame();
+        });
+        
+        // 重新开始按钮
+        restartBtn.addEventListener('click', initGame);
+        
+        // 再玩一次按钮
+        playAgainBtn.addEventListener('click', () => {
+            resultScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            initGame();
+        });
+    </script>
+</body>
+</html>
